@@ -8,12 +8,13 @@ using Optim
 
 include("masseswidths.jl")
 
-export FlatteModel
-export ReparametrizeFlatte
-export compute_corrected_Ef
-export AJψππ, denominator
+export FlatteModel, FlatteModelSimpler
+export shift_Ef, shift_Ef_simpler
+export ReparametrizeFlatte, ReparametrizeFlatteSimpler
+export compute_corrected_Ef, compute_corrected_Ef_simpler
+export AJψππ, denominator, denominator_cont
 export scattering_parameters
-export pole_position
+export pole_position, pole_position_cont
 include("flatte.jl")
 
 include("branchings.jl")

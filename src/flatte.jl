@@ -15,6 +15,12 @@ Parameters contained in the structure are
     fω::Float64
 end
 
+@with_kw struct FlatteModelSimpler
+    Ef_MeV::Float64
+    g::Float64
+    Γ₀_MeV::Float64
+end
+
 """
     shift_Ef(g, Ef_corr)
 
@@ -29,6 +35,13 @@ Calculates the Ef value in MeV from the corrected energy parameter and coupling 
 """
 function shift_Ef(g, Ef_corr)
     _model = FlatteModel(; Ef_MeV = 0.0, g, Γ₀_MeV = 0.0, fρ = 0.0, fω = 0.0)
+    Ef_GeV = denominator(_model, Ef_corr) |> real
+    Ef_MeV = 1e3 * Ef_GeV
+    return Ef_MeV
+end
+
+function shift_Ef_simpler(g, Ef_corr)
+    _model = FlatteModelSimpler(; Ef_MeV = 0.0, g, Γ₀_MeV = 0.0)
     Ef_GeV = denominator(_model, Ef_corr) |> real
     Ef_MeV = 1e3 * Ef_GeV
     return Ef_MeV
@@ -51,6 +64,12 @@ function ReparametrizeFlatte(pars_corr)
     return FlatteModel(; Ef_MeV, g, Γ₀_MeV, fρ, fω)
 end
 
+function ReparametrizeFlatteSimpler(pars_corr)
+    @unpack Ef_corr, g, Γ₀_MeV = pars_corr
+    Ef_MeV = shift_Ef_simpler(g, Ef_corr)
+    return FlatteModelSimpler(; Ef_MeV, g, Γ₀_MeV)
+end
+
 """
     compute_corrected_Ef(Ef, g, Ef_corr_guess = -0.04)
 
@@ -67,6 +86,12 @@ between physical Ef and corrected Ef_corr parameters.
 """
 function compute_corrected_Ef(Ef, g, Ef_corr_guess = -0.04)
     sol = nlsolve(x -> (shift_Ef(g, x[1]) - Ef), [Ef_corr_guess])
+    Ef_corr = sol.zero[1]
+    (; sol, Ef_corr)
+end
+
+function compute_corrected_Ef_simpler(Ef, g, Ef_corr_guess = -0.04)
+    sol = nlsolve(x -> (shift_Ef_simpler(g, x[1]) - Ef), [Ef_corr_guess])
     Ef_corr = sol.zero[1]
     (; sol, Ef_corr)
 end
@@ -95,7 +120,23 @@ function denominator(model::FlatteModel, E) # E is in MeV
     return D
 end
 
+function denominator(model::FlatteModelSimpler, E) # E is in MeV
+    @unpack Ef_MeV, g, Γ₀_MeV = model
+    #
+    D = (E - Ef_MeV) * 1e-3 + 0.5im * (g * k1(E) + g * k2(E)) +
+        0.5im * (Γ₀_MeV * 1e-3)
+    return D
+end
 
+function denominator_cont(model::FlatteModelSimpler, E) # E is in MeV
+    @unpack Ef_MeV, g, Γ₀_MeV = model
+    #
+    D = (E - Ef_MeV) * 1e-3 + 0.5im * (g * k1_cont(E) + g * k2(E)) +
+        0.5im * (Γ₀_MeV * 1e-3)
+    return D
+end
+
+const AnyFlatteModel = Union{FlatteModel, FlatteModelSimpler}
 
 """
     AJψππ(model::FlatteModel, E)
@@ -110,7 +151,7 @@ The functional dependence is the same as for the Dˣ⁰ D̄⁰ → Dˣ⁰ D̄⁰
 # Returns
 - Complex amplitude value
 """
-AJψππ(model::FlatteModel, E) = 1 / denominator(model::FlatteModel, E)
+AJψππ(model::AnyFlatteModel, E) = 1 / denominator(model::AnyFlatteModel, E)
 
 """
     scattering_parameters(::Type{FlatteModel}, Ef_MeV, g)
@@ -126,7 +167,7 @@ Returns the inverse scattering length and effective range.
 # Returns
 - `NamedTuple`: Contains inverse scattering length (`inva`) and effective range (`r`)
 """
-function scattering_parameters(::Type{FlatteModel}, Ef_MeV, g)
+function scattering_parameters(::Type{AnyFlatteModel}, Ef_MeV, g)
     # expressions from arXiv: 2108.11413
     inva_GeV = (2 * Ef_MeV * 1e-3) / g + sqrt(2 * μ⁺ * δ⁺)  # Eq.18a 
     inva = inva_GeV * 1e3
@@ -148,7 +189,7 @@ using the parameters from the provided FlatteModel instance.
 # Returns
 - `NamedTuple`: Contains inverse scattering length (`inva`) and effective range (`r`)
 """
-scattering_parameters(model::FlatteModel) =
+scattering_parameters(model::AnyFlatteModel) =
     scattering_parameters(typeof(model), model.Ef_MeV, model.g)
 
 """
@@ -165,8 +206,16 @@ approaches zero.
 # Returns
 - `Epole::Complex`: Complex energy position of the pole in MeV
 """
-function pole_position(model::FlatteModel, init = -1e3im * model.Γ₀_MeV / 10)
+function pole_position(model::AnyFlatteModel, init = -1e3im * model.Γ₀_MeV / 10)
     fr = optimize(x -> abs2(denominator(model, x[1] + x[2] * 1im)), collect(reim(init)), BFGS())
+    minimum_reached = (fr.minimum < 1e-8)
+    !(minimum_reached) && error("Pole is not found: fr.minimum = $(fr.minimum)")
+    Epole = complex(fr.minimizer...) # MeV
+    return Epole
+end
+
+function pole_position_cont(model::AnyFlatteModel, init = 1e3im * model.Γ₀_MeV / 10)
+    fr = optimize(x -> abs2(denominator_cont(model, x[1] + x[2] * 1im)), collect(reim(init)), BFGS())
     minimum_reached = (fr.minimum < 1e-8)
     !(minimum_reached) && error("Pole is not found: fr.minimum = $(fr.minimum)")
     Epole = complex(fr.minimizer...) # MeV

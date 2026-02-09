@@ -35,3 +35,5 @@ k2(E::Complex) = 1im * sqrt(-2μ⁺ * (E * 1e-3 - δ⁺))
 k1(E::Real) = k1(E + 1e-7im)
 k2(E::Real) = k2(E + 1e-7im)
 
+k1_cont(E::Complex) = 1im * (-1) * sqrt(-2μ * (E * 1e-3))
+k1_cont(E::Real) = k1_cont(E + 1e-7im)
