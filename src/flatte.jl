@@ -167,7 +167,7 @@ Returns the inverse scattering length and effective range.
 # Returns
 - `NamedTuple`: Contains inverse scattering length (`inva`) and effective range (`r`)
 """
-function scattering_parameters(::Type{AnyFlatteModel}, Ef_MeV, g)
+function scattering_parameters(::Type{<:AnyFlatteModel}, Ef_MeV, g)
     # expressions from arXiv: 2108.11413
     inva_GeV = (2 * Ef_MeV * 1e-3) / g + sqrt(2 * μ⁺ * δ⁺)  # Eq.18a 
     inva = inva_GeV * 1e3
