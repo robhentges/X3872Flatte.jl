@@ -232,7 +232,7 @@ Denominator for Style-B wrapper:
 - First map Ef_corr -> Ef using map_* knobs (usually fixed convention)
 - Then evaluate denominator_std at (sheet, widthflags) knobs
 """
-function denominator(m::FlatteCorr, E_MeV;
+function denominator(m::FlatteCorr{<:Union{FlatteModel,FlatteModelSimpler}}, E_MeV;
                      # mapping knobs (should usually be kept fixed)
                      map_sheet::Sheet2 = PHYS_SHEET,
                      map_widthflags::WidthFlags2 = NO_WIDTH,
@@ -244,7 +244,7 @@ function denominator(m::FlatteCorr, E_MeV;
     return denominator_std(mstd, E_MeV; sheet=sheet, widthflags=widthflags, Γs_MeV=Γs_MeV)
 end
 
-AJψππ(m::FlatteCorr, E_MeV; kwargs...) = 1 / denominator(m, E_MeV; kwargs...)
+AJψππ(m::FlatteCorr{<:Union{FlatteModel,FlatteModelSimpler}}, E_MeV; kwargs...) = 1 / denominator(m, E_MeV; kwargs...)
 
 # ----------------------------
 # Pole search utility
@@ -269,16 +269,27 @@ function pole_position(m, init::Complex = -0.1im * getfield(m isa FlatteCorr ? m
     return complex(fr.minimizer...)  # MeV
 end
 
-function scattering_parameters(model::FlatteCorr;
+# --- constructor typing ---
+FlatteCorr(base::FlatteModel, Ef_corr) =
+    FlatteCorr{FlatteModel}(base, Ef_corr)
+
+FlatteCorr(base::FlatteModelSimpler, Ef_corr) =
+    FlatteCorr{FlatteModelSimpler}(base, Ef_corr)
+
+# --- standard model method ---
+scattering_parameters(model::Union{FlatteModel,FlatteModelSimpler}) =
+    scattering_parameters(typeof(model), model.Ef_MeV, model.g)
+
+# --- style B method ---
+function scattering_parameters(model::FlatteCorr{<:Union{FlatteModel,FlatteModelSimpler}};
                                map_sheet::Sheet2 = PHYS_SHEET,
                                map_widthflags::WidthFlags2 = NO_WIDTH,
-                               Γs_MeV::Tuple{Float64,Float64} = (ΓDˣ⁰ * 1e3, ΓDˣ⁺ * 1e3))
+                               Γs_MeV::Tuple{Float64,Float64} = (ΓDˣ⁰*1e3, ΓDˣ⁺*1e3))
 
-    # Convert to standard model first
     mstd = to_standard(model;
-                       map_sheet=map_sheet,
-                       map_widthflags=map_widthflags,
-                       Γs_MeV=Γs_MeV)
+                       map_sheet = map_sheet,
+                       map_widthflags = map_widthflags,
+                       Γs_MeV = Γs_MeV)
 
     return scattering_parameters(mstd)
 end
