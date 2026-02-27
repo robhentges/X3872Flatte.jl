@@ -269,7 +269,7 @@ function pole_position(m, init::Complex = -0.1im * getfield(m isa FlatteCorr ? m
     return complex(fr.minimizer...)  # MeV
 end
 
-# --- constructor typing ---
+#=# --- constructor typing ---
 FlatteCorr(base::FlatteModel, Ef_corr) =
     FlatteCorr{FlatteModel}(base, Ef_corr)
 
@@ -278,7 +278,7 @@ FlatteCorr(base::FlatteModelSimpler, Ef_corr) =
 
 # --- standard model method ---
 scattering_parameters(model::Union{FlatteModel,FlatteModelSimpler}) =
-    scattering_parameters(typeof(model), model.Ef_MeV, model.g)
+    scattering_parameters(typeof(model), model.Ef_MeV, model.g)=#
 
 # --- style B method ---
 function scattering_parameters(model::FlatteCorr{<:Union{FlatteModel,FlatteModelSimpler}};
