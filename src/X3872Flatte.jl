@@ -8,7 +8,7 @@ using Optim
 
 include("masseswidths.jl")
 
-export FlatteModel, FlatteModelSimpler, FlatteCorr
+export FlatteModel, FlatteModelSimpler, FlatteCorr, ReparametrizeFlatteSimpler
 export inelastic_term, k_nr, sigma_DDst, denominator_std
 export shift_Ef, compute_corrected_Ef, to_standard
 export AJψππ, denominator, pole_position

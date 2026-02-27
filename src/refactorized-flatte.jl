@@ -56,6 +56,13 @@ struct FlatteCorr{T}
     Ef_corr_MeV::Float64
 end
 
+function ReparametrizeFlatteSimpler(nt)
+    return FlatteCorr(
+        FlatteModelSimpler(Ef_MeV = 0.0, g = nt.g, Γ₀_MeV = nt.Γ₀_MeV),
+        nt.Ef_corr
+    )
+end
+
 # ----------------------------
 # Helpers for inelastic channels
 # ----------------------------
