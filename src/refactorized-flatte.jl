@@ -185,7 +185,7 @@ function shift_Ef(g::Float64, Ef_corr_MeV::Float64;
                   map_sheet::Sheet2 = PHYS_SHEET,
                   map_widthflags::WidthFlags2 = NO_WIDTH,
                   Γs_MeV::Tuple{Float64,Float64} = (ΓDˣ⁰ * 1e3, ΓDˣ⁺ * 1e3))
-    calib = FlatteModel(Ef_MeV=0.0, g=g, Γ₀_MeV=0.0, fρ=0.0, fω=0.0)
+    calib = FlatteModelSimpler(Ef_MeV=0.0, g=g, Γ₀_MeV=0.0) # , fρ=0.0, fω=0.0
     D = denominator_std(calib, Ef_corr_MeV; sheet=map_sheet, widthflags=map_widthflags, Γs_MeV=Γs_MeV)
     return 1e3 * real(D)  # MeV
 end
