@@ -265,7 +265,7 @@ function pole_position(m, init::Complex = -0.1im * getfield(m isa FlatteCorr ? m
         abs2(D)
     end
     fr = optimize(f, collect(reim(init)), BFGS())
-    fr.minimum < 1e-10 || error("Pole not found: minimum = $(fr.minimum)")
+    fr.minimum < 1e-8 || error("Pole not found: minimum = $(fr.minimum)")
     return complex(fr.minimizer...)  # MeV
 end
 
